@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDgkHjxy95S3gaozZsYd9e1C7KAlo_e0cg",
+            authDomain: "flappy-bird-e1132.firebaseapp.com",
+            projectId: "flappy-bird-e1132",
+            storageBucket: "flappy-bird-e1132.firebasestorage.app",
+            messagingSenderId: "93641082451",
+            appId: "1:93641082451:web:03e74371079acab610a8a6",
+            measurementId: "G-5Z7V98YSKM"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getFirestore(app);
+
+        // Make Firebase available globally
+        window.firebaseApp = app;
+        window.firebaseDb = db;
+        window.firebaseCollection = collection;
+        window.firebaseAddDoc = addDoc;
+        window.firebaseGetDocs = getDocs;
+        window.firebaseQuery = query;
+        window.firebaseOrderBy = orderBy;
+        window.firebaseLimit = limit;
+    </script>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="score-display">0</div>
+        
+        <!-- Sound Controls -->
+        <div class="sound-controls">
+            <button class="sound-btn" id="music-toggle" title="Toggle Music">🎵</button>
+            <button class="sound-btn" id="sound-toggle" title="Toggle Sound Effects">🔊</button>
+        </div>
+        
+        <!-- Circle reveal animation -->
+        <div id="circle-reveal"></div>
+        
+        <!-- Explosion animation -->
+        <div class="explosion" id="explosion"></div>
+
+        <!-- Countdown Timer -->
+        <div id="countdown-screen">
+            <div id="countdown-number">5</div>
+            <div id="countdown-text">Get Ready!</div>
+        </div>
+        
+        <div id="home-screen">
+            <div class="header-section">
+                <div class="logo-container">
+                    <div class="logo">
+                        <span>F</span>
+                        <span>l</span>
+                        <span>a</span>
+                        <span>p</span>
+                        <span>p</span>
+                        <span>y</span>
+                    </div>
+                    <div class="logo" style="font-size: 8vmin; margin-top: -1vmin;">
+                        <span>B</span>
+                        <span>i</span>
+                        <span>r</span>
+                        <span>d</span>
+                    </div>
+                </div>
+                
+                <p class="tagline">Navigate through pipes & achieve high score!</p>
+            </div>
+            
+            <div class="content-section">
+                <div class="bird-animation">
+                    <div class="bird-body"></div>
+                    <div class="bird-head"></div>
+                    <div class="bird-wing"></div>
+                    <div class="bird-eye">
+                        <div class="bird-pupil"></div>
+                    </div>
+                    <div class="bird-beak"></div>
+                    <div class="bird-feather"></div>
+                </div>
+                
+                <div class="difficulty-container">
+                    <div class="difficulty-btn selected" data-difficulty="easy">
+                        <div class="difficulty-icon">😊</div>
+                        <div class="difficulty-name">Easy</div>
+                        <div class="difficulty-info">Wide gaps</div>
+                    </div>
+                    <div class="difficulty-btn" data-difficulty="medium">
+                        <div class="difficulty-icon">😐</div>
+                        <div class="difficulty-name">Medium</div>
+                        <div class="difficulty-info">Normal</div>
+                    </div>
+                    <div class="difficulty-btn" data-difficulty="hard">
+                        <div class="difficulty-icon">😰</div>
+                        <div class="difficulty-name">Hard</div>
+                        <div class="difficulty-info">Narrow gaps</div>
+                    </div>
+                </div>
+                
+                <button class="start-btn" id="start-button">Play Game</button>
+                <button class="leaderboard-btn" id="leaderboard-button">Leaderboard</button>
+            </div>
+            
+            <div class="footer-section">
+                <p class="instructions">Click or press SPACE to flap. Avoid pipes!</p>
+            </div>
+        </div>
+        
+        <div id="game-over">
+            <h2>Game Over</h2>
+            <p class="final-score">Score: <span id="final-score">0</span></p>
+            <div class="name-input-container" id="name-input-container" style="display: none;">
+                <input type="text" id="player-name" placeholder="Enter your name" maxlength="15">
+                <button class="save-btn" id="save-score-button">Save Score</button>
+            </div>
+            <div class="button-container">
+                <button class="start-btn" id="restart-button">Play Again</button>
+                <button class="home-btn" id="home-button">Go to Home</button>
+            </div>
+        </div>
+
+        <!-- Leaderboard Screen -->
+        <div id="leaderboard-screen">
+            <div class="leaderboard-header">
+                <h2>🏆 Leaderboard 🏆</h2>
+                <button class="close-btn" id="close-leaderboard">✕</button>
+            </div>
+            <div class="leaderboard-content">
+                <div class="leaderboard-tabs">
+                    <button class="tab-btn active" data-difficulty="easy">Easy</button>
+                    <button class="tab-btn" data-difficulty="medium">Medium</button>
+                    <button class="tab-btn" data-difficulty="hard">Hard</button>
+                </div>
+                <div class="leaderboard-list" id="leaderboard-list">
+                    <div class="loading-text">Loading leaderboard...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
